@@ -62,6 +62,13 @@ end
 grub_lord.send(:food_order => [1,2,3])
 ```
 
+and reference them in go
+
+```go
+  channel := grubby.GetChannel("grub lord")
+  channel.Receive()
+``
+
 If you wanna get things done, you gotta get grubby (TM).
 
 Don't let your ruby files get too big, and let golang do all the paperwork for you.
