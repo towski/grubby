@@ -18,7 +18,9 @@ goodcop.go
 import 'github.com/towski/grubby'
 func main(){
   channel := grubby.Start("badcop.rb")
-  go channel.Receive()
+  go func(){
+    _ = channel.Receive()
+  }
   channel.Send("Hello")
 }
 
@@ -33,7 +35,7 @@ Channel.receive do |hello|
 end
 ```
 
-So when you execute ./goodcop, you get a ruby process ready to receive data from go, which can send data back.
+So when you execute ./goodcop, you get a ruby process ready to receive data from go, which can also send data back.
 
 You can start any number of grubby scripts:
 ```go
@@ -60,7 +62,10 @@ end
 grub_lord.send(:food_order => [1,2,3])
 ```
 
-If you wanna get things done, you gotta get grubby (TM)
+If you wanna get things done, you gotta get grubby (TM).
+
+Don't let your ruby files get too big, or they might become too big to fail. Grubby makes sure they stay 
+small enough so they can still fail.
 
 But don't try any of this yet, because it's not implemented
 
