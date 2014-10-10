@@ -12,8 +12,10 @@ func main(){
     marp["hey"] = "hey"
     go func(){
         channel.Send(marp)
-        data := channel.Receive()
+        var data interface{}
+        data = channel.Receive()
         _ = data
+        data = channel.Receive()
         fmt.Println("done receving")
         wg.Done()
     }()

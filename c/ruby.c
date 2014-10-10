@@ -17,7 +17,7 @@ static VALUE rb_active(VALUE self){
     //fork();
 }
 
-static VALUE rb_send(VALUE self){
+static VALUE rb_send(VALUE self, VALUE to_send){
     int msqid;
     int msgflg = IPC_CREAT | 0666;
     key_t key;
@@ -29,10 +29,10 @@ static VALUE rb_send(VALUE self){
         exit(1);
     }
     sbuf.mtype = 1;
-    (void) strcpy(sbuf.mtext, "sending back");
+    (void) strcpy(sbuf.mtext, rb_string_value_cstr(&to_send));
     buf_length = strlen(sbuf.mtext) + 1 ;
     if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0) {
-       printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
+        printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
         perror("msgsnd");
         exit(1);
     }
@@ -49,12 +49,13 @@ static VALUE rb_receive(VALUE self){
         perror("msgget");
         exit(1);
     }
-    if (msgrcv(msqid, &rbuf, MSGSZ, 1, 0) < 0) {
+    int num;
+    num = msgrcv(msqid, &rbuf, MSGSZ, 1, 0);
+    if (num < 0) {
         perror("msgrcv");
         exit(1);
     }
-    printf("%s\n", rbuf.mtext);
-    return Qfalse;
+    return rb_str_new2(rbuf.mtext);
 }
 
 static void dump_rb_error(void)
@@ -74,18 +75,16 @@ static void dump_rb_error(void)
 }
 
 int main(int argc, char** argv){
-    printf("starting\n");
     ruby_init();//(&argc, &argv);
     ruby_init_loadpath();
     rb_cDFHack = rb_define_module("Channel");
     rb_define_singleton_method(rb_cDFHack, "receive", rb_receive, 0);
-    rb_define_singleton_method(rb_cDFHack, "send", rb_send, 0);
+    rb_define_singleton_method(rb_cDFHack, "send", rb_send, 1);
     int state = 0;
     rb_eval_string_protect("require './channels.rb'", &state);
     if(state){
         dump_rb_error();
     }
-    printf("done\n");
     ruby_finalize();
     //rb_eval_string_protect("Channel.new", ret);
     //ruby_script("channels.rb");

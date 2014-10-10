@@ -1,6 +1,5 @@
 class Encoding::UTF_7
 end
-puts Encoding.list
 class Encoding
   UTF_8 = Encoding.find('UTF-8')
 end
@@ -16,11 +15,11 @@ ActiveRecord::Base.establish_connection(:database => "dwarfomatic", :username =>
 class Dwarf < ActiveRecord::Base
 end
 
-begin
-  dwarf = Dwarf.find(1)
-rescue
-end
+puts Dwarf.count
 
-Channel.receive
+value = Channel.receive
+puts value
 sleep 1
-Channel.send
+Channel.send({:hey => "you"}.to_json)
+sleep 3
+Channel.send({:hey => "you"}.to_json)
