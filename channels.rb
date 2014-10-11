@@ -1,12 +1,4 @@
-class Encoding::UTF_7
-end
-class Encoding
-  UTF_8 = Encoding.find('UTF-8')
-end
-require 'enc/utf_16be'
-require 'enc/utf_16le'
-require 'enc/utf_32be'
-require 'enc/utf_32le'
+# UTF_8 = Encoding.find('UTF-8')
 require 'rubygems'
 require 'active_record'
 require 'mysql2'
@@ -17,9 +9,10 @@ end
 
 puts Dwarf.count
 
-value = Channel.receive
-puts value
-sleep 1
-Channel.send({:hey => "you"}.to_json)
-sleep 3
-Channel.send({:hey => "you"}.to_json)
+Channel.receive do |value|
+  puts value
+  sleep 1
+  Channel.send({:hey => "you"})
+  sleep 3
+  Channel.send({:hey => "you"})
+end

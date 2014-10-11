@@ -29,17 +29,20 @@ static VALUE rb_send(VALUE self, VALUE to_send){
         exit(1);
     }
     sbuf.mtype = 1;
-    (void) strcpy(sbuf.mtext, rb_string_value_cstr(&to_send));
+    VALUE json = rb_funcall(to_send, rb_intern("to_json"), 0);
+    (void) strcpy(sbuf.mtext, rb_string_value_cstr(&json));
     buf_length = strlen(sbuf.mtext) + 1 ;
     if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0) {
         printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
         perror("msgsnd");
         exit(1);
     }
-    return Qfalse;
+    return Qtrue;
 }
 
 static VALUE rb_receive(VALUE self){
+    if(!rb_block_given_p())
+        rb_raise(rb_eArgError, "a block is required");
     int msqid;
     key_t key;
     message_buf  rbuf;
@@ -55,7 +58,17 @@ static VALUE rb_receive(VALUE self){
         perror("msgrcv");
         exit(1);
     }
-    return rb_str_new2(rbuf.mtext);
+    VALUE json_class = rb_const_get(rb_cObject, rb_intern("JSON"));
+    rb_yield(
+        rb_funcall(
+            json_class,
+            rb_intern("parse"),
+            1,
+            rb_str_new2(rbuf.mtext)
+        )
+    );
+ 
+    return Qnil;
 }
 
 static void dump_rb_error(void)
@@ -77,6 +90,14 @@ static void dump_rb_error(void)
 int main(int argc, char** argv){
     ruby_init();//(&argc, &argv);
     ruby_init_loadpath();
+    rb_require("json");
+    rb_require("enc/utf_16be");
+    rb_require("enc/utf_16le");
+    rb_require("enc/utf_32be");
+    rb_require("enc/utf_32le");
+    VALUE encoding_class = rb_const_get(rb_cObject, rb_intern("Encoding"));
+    rb_define_class_under(encoding_class, "UTF_7", rb_cObject);
+    rb_define_class_under(encoding_class, "UTF_8", rb_cObject);
     rb_cDFHack = rb_define_module("Channel");
     rb_define_singleton_method(rb_cDFHack, "receive", rb_receive, 0);
     rb_define_singleton_method(rb_cDFHack, "send", rb_send, 1);
