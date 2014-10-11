@@ -28,7 +28,6 @@ char* receive(int pid){
         perror("msgsnd");
         exit(1);
     }
-    printf("got back %s\n", rbuf.mtext);
     return rbuf.mtext;
 }
 
@@ -57,7 +56,7 @@ int start(char* value)
 {
     int child_pid = fork();
     if(child_pid == 0){
-        execl("./ruby", NULL);
+        execl("./ruby", value, NULL);
         return;
     } else {
         Register(child_pid);

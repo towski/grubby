@@ -13,10 +13,11 @@ func main(){
     go func(){
         channel.Send(marp)
         var data interface{}
-        data = channel.Receive()
+        channel.Receive(&data)
         _ = data
-        data = channel.Receive()
-        fmt.Println("done receving")
+        fmt.Println("done to receiving %v", data)
+        channel.Receive(&data)
+        fmt.Println("done to receiving %v", data)
         wg.Done()
     }()
     wg.Wait()

@@ -5,17 +5,10 @@
 #include <sys/msg.h>
 #include <stdio.h>
 #define MSGSZ     128
-
-typedef struct {
-    long    mtype;
+typedef struct { long    mtype;
     char    mtext[MSGSZ];
-} message_buf;
-
-static VALUE rb_cDFHack;
-
-static VALUE rb_active(VALUE self){
-    //fork();
-}
+} message_buf; 
+static VALUE rb_cChannel;
 
 static VALUE rb_send(VALUE self, VALUE to_send){
     int msqid;
@@ -88,7 +81,7 @@ static void dump_rb_error(void)
 }
 
 int main(int argc, char** argv){
-    ruby_init();//(&argc, &argv);
+    ruby_init();//sysinit(&argc, &argv);
     ruby_init_loadpath();
     rb_require("json");
     rb_require("enc/utf_16be");
@@ -98,15 +91,16 @@ int main(int argc, char** argv){
     VALUE encoding_class = rb_const_get(rb_cObject, rb_intern("Encoding"));
     rb_define_class_under(encoding_class, "UTF_7", rb_cObject);
     rb_define_class_under(encoding_class, "UTF_8", rb_cObject);
-    rb_cDFHack = rb_define_module("Channel");
-    rb_define_singleton_method(rb_cDFHack, "receive", rb_receive, 0);
-    rb_define_singleton_method(rb_cDFHack, "send", rb_send, 1);
+    rb_cChannel = rb_define_module("Channel");
+    rb_define_singleton_method(rb_cChannel, "receive", rb_receive, 0);
+    rb_define_singleton_method(rb_cChannel, "send", rb_send, 1);
+    ruby_script(argv[0]);
     int state = 0;
-    rb_eval_string_protect("require './channels.rb'", &state);
+    char* script;
+    sprintf(script, "require './%s'", argv[0]);
+    rb_eval_string_protect(script, &state);
     if(state){
         dump_rb_error();
     }
     ruby_finalize();
-    //rb_eval_string_protect("Channel.new", ret);
-    //ruby_script("channels.rb");
 }

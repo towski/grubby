@@ -2,7 +2,9 @@
 
 TARGET=grubby
 
-$(TARGET): c/bridge.so library ruby main 
+$(TARGET): c/bridge.so library other
+
+other: ruby main 
 
 main: cmd/main.go
 	go build -o z cmd/main.go
