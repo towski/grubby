@@ -18,10 +18,14 @@ goodcop.go
 import 'github.com/towski/grubby'
 func main(){
   channel := grubby.Start("badcop.rb")
+  to_send := make(map[string]string)
+  to_send["hey"] = "hey"
   go func(){
-    _ = channel.Receive()
+    channel.Send(to_send)
+    var data interface{}
+    channel.Receive(&data)
+    fmt.Println("done to receiving %v", data)
   }
-  channel.Send("Hello")
 }
 
 ```
@@ -31,7 +35,7 @@ And badcop.rb looks like this:
 ```ruby
 Channel.receive do |hello|
   puts hello
-  Channel.send "world"
+  Channel.send(:something => "to_json")
 end
 ```
 
@@ -49,25 +53,6 @@ func main(){
 ```
 
 and route data to them through go.
-
-A single grubby can open multiple channels as well, provided you give them names.
-```ruby
-grub_lord = Channel.new("grub lord")
-grub_shaman = Channel.new("grub shaman")
-
-grub_shaman.receive do |orders|
-  ...
-end
-
-grub_lord.send(:food_order => [1,2,3])
-```
-
-and reference them in go
-
-```go
-  channel := grubby.GetChannel("grub lord")
-  channel.Receive()
-``
 
 If you wanna get things done, you gotta get grubby (TM).
 
