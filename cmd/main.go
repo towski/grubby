@@ -6,7 +6,7 @@ import "github.com/towski/grubby"
 
 func main(){
     var wg sync.WaitGroup
-    channel := grubby.Start("channels.rb")
+    channel := grubby.Start("rb/channels.rb")
     wg.Add(1)
     marp := make(map[string]string)
     marp["hey"] = "hey"

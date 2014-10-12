@@ -3,9 +3,10 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <zlib.h>
 #include <stdio.h>
 #include <string.h>
-#define MSGSZ     128
+#define MSGSZ     65536
 
 typedef struct msgbuf {
          long    mtype;
@@ -13,7 +14,7 @@ typedef struct msgbuf {
 } message_buf;
 
 char* message;
-char* receive(int pid){
+char* receive_grubby(int pid){
     int msqid;
     int msgflg = IPC_CREAT | 0666;
     key_t key;
@@ -22,44 +23,54 @@ char* receive(int pid){
     key = pid + 100000;
     if ((msqid = msgget(key, msgflg )) < 0) {
         perror("msgget");
-        exit(1);
     }
     if (msgrcv(msqid, &rbuf, MSGSZ, 1, 0) < 0) {
         perror("msgsnd");
-        exit(1);
     }
     return rbuf.mtext;
 }
 
-void send(char* value, int pid){
+void send_grubby(char* value, int pid){
+    struct msqid_ds qbuf;
     int msqid;
     int msgflg = IPC_CREAT | 0666;
     key_t key;
     message_buf sbuf;
     size_t buf_length;
     key = pid;
-    if ((msqid = msgget(key, msgflg )) < 0) {
+    char compressed[1000];
+    uLong ucompSize = strlen(value)+1; 
+    uLong compSize = compressBound(ucompSize);
+    compress((Bytef*)compressed, &compSize, (Bytef*)value, ucompSize);
+    if((msqid = msgget(key, msgflg )) < 0){
         perror("msgget");
-        exit(1);
+    }
+    if(msgctl(msqid, IPC_STAT, &qbuf) == -1){
+        printf("unable to stat");
+    } else {
+        printf("queue stats: current bytes:%d, current messages:%d, max bytes:%d\n", qbuf.__msg_cbytes, qbuf.msg_qnum, qbuf.msg_qbytes);
     }
     sbuf.mtype = 1;
-    (void) strcpy(sbuf.mtext, value);
-    buf_length = strlen(sbuf.mtext) + 1 ;
-    if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0) {
-        printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
+    compressed[compSize + 0] = (ucompSize >> 24) & 0xFF;
+    compressed[compSize + 1] = (ucompSize >> 16) & 0xFF;
+    compressed[compSize + 2] = (ucompSize >> 8) & 0xFF;
+    compressed[compSize + 3] = ucompSize & 0xFF;
+    (void) memcpy(sbuf.mtext, compressed, compSize + sizeof(int));
+    buf_length = compSize + 4;
+    if (msgsnd(msqid, &sbuf, buf_length, 0) < 0) {
+        printf ("%d, %d, %d\n", msqid, sbuf.mtype, buf_length);
         perror("msgsnd");
-        exit(1);
     }
 }
 
-int start(char* value)
+int start_grubby(char* value)
 {
     int child_pid = fork();
     if(child_pid == 0){
-        execl("./ruby", value, NULL);
-        return;
+        execl("/home/towski/code/grubby/ruby", value, NULL);
+        return 0;
     } else {
-        Register(child_pid);
+        //Register(child_pid);
         return child_pid;
     }
 }

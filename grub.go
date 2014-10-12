@@ -1,6 +1,6 @@
 package grubby
 
-// #cgo LDFLAGS: /home/towski/code/grubby/c/bridge.so -lm -lcrypt -ldl -I/usr/local/include/libbson-1.0 -L/usr/local/lib -lbson-1.0
+// #cgo LDFLAGS: /home/towski/code/grubby/c/bridge.so -lm -lcrypt -ldl -lz
 // #include "c/bridge.h"
 import "C"
 //import "gopkg.in/mgo.v2/bson"
@@ -11,13 +11,13 @@ func Register(pid int) {
 
 func send(data []byte, pid int){
     str := C.CString(string(data))
-    C.send(str, C.int(pid))
+    C.send_grubby(str, C.int(pid))
 }
 
 func Start(script string) (*Grubby){
     grubby := Grubby{}
     grubby.Script = script
-    grubby.Pid = (int)(C.start(C.CString(script)))
+    grubby.Pid = (int)(C.start_grubby(C.CString(script)))
     return &grubby
 }
 
@@ -32,7 +32,7 @@ func (g *Grubby) Send(data interface{}){
 }
 
 func (g *Grubby) Receive(data *interface{}) {
-    thing := C.receive(C.int(g.Pid))
+    thing := C.receive_grubby(C.int(g.Pid))
     bytes := C.GoString(thing)
     json.Unmarshal([]byte(bytes), data)
 }

@@ -3,11 +3,14 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <zlib.h>
 #include <stdio.h>
-#define MSGSZ     128
+#define MSGSZ     65536
+
 typedef struct { long    mtype;
     char    mtext[MSGSZ];
 } message_buf; 
+
 static VALUE rb_cChannel;
 
 static VALUE rb_send(VALUE self, VALUE to_send){
@@ -19,7 +22,6 @@ static VALUE rb_send(VALUE self, VALUE to_send){
     key = getpid() + 100000;
     if ((msqid = msgget(key, msgflg )) < 0) {
         perror("msgget");
-        exit(1);
     }
     sbuf.mtype = 1;
     VALUE json = rb_funcall(to_send, rb_intern("to_json"), 0);
@@ -28,7 +30,6 @@ static VALUE rb_send(VALUE self, VALUE to_send){
     if (msgsnd(msqid, &sbuf, buf_length, IPC_NOWAIT) < 0) {
         printf ("%d, %d, %s, %d\n", msqid, sbuf.mtype, sbuf.mtext, buf_length);
         perror("msgsnd");
-        exit(1);
     }
     return Qtrue;
 }
@@ -43,21 +44,27 @@ static VALUE rb_receive(VALUE self){
     key = getpid();
     if ((msqid = msgget(key, msgflg)) < 0) {
         perror("msgget");
-        exit(1);
     }
     int num;
     num = msgrcv(msqid, &rbuf, MSGSZ, 1, 0);
     if (num < 0) {
         perror("msgrcv");
-        exit(1);
     }
+    char decompressed[2000];
+    uLong ucompSize;
+    ucompSize = rbuf.mtext[num - 1] | ( (int)rbuf.mtext[num - 2] << 8 ) | ( (int)rbuf.mtext[num - 3] << 16 ) | ( (int)rbuf.mtext[num - 4] << 24 );
+    rbuf.mtext[num - 4] = 0; 
+    rbuf.mtext[num - 3] = 0;
+    rbuf.mtext[num - 2] = 0;
+    rbuf.mtext[num - 1] = 0;
+    int res = uncompress((Bytef*)decompressed, &ucompSize, (Bytef*)rbuf.mtext, num - 4);
     VALUE json_class = rb_const_get(rb_cObject, rb_intern("JSON"));
     rb_yield(
         rb_funcall(
             json_class,
             rb_intern("parse"),
             1,
-            rb_str_new2(rbuf.mtext)
+            rb_str_new2(decompressed)
         )
     );
  

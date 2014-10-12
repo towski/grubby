@@ -1,5 +1,11 @@
-typedef int (*intFunc) ();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void send(char*, int);
-char* receive(int);
-int start(char*);
+void send_grubby(char*, int);
+char* receive_grubby(int);
+int start_grubby(char*);
+ 
+#ifdef __cplusplus
+}
+#endif
