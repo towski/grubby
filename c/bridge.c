@@ -13,6 +13,8 @@ typedef struct msgbuf {
          char    mtext[MSGSZ];
 } message_buf;
 
+
+int debug = 0;
 char* message;
 char* receive_grubby(int pid){
     int msqid;
@@ -48,7 +50,9 @@ void send_grubby(char* value, int pid){
     if(msgctl(msqid, IPC_STAT, &qbuf) == -1){
         printf("unable to stat");
     } else {
-        printf("queue stats: current bytes:%d, current messages:%d, max bytes:%d\n", qbuf.__msg_cbytes, qbuf.msg_qnum, qbuf.msg_qbytes);
+        if(debug == 1){
+            printf("queue stats: current bytes:%d, current messages:%d, max bytes:%d\n", qbuf.__msg_cbytes, qbuf.msg_qnum, qbuf.msg_qbytes);
+        }
     }
     sbuf.mtype = 1;
     compressed[compSize + 0] = (ucompSize >> 24) & 0xFF;

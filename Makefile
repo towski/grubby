@@ -21,7 +21,7 @@ library: grub.go
 	$(GO_BIN) install github.com/towski/grubby
 
 clean:
-	rm -f *.o *.so c/ruby main c/*so c/*o /home/towski/gopath/pkg/linux_amd64/github.com/towski/grubby.a
+	rm -f *.o *.so c/ruby main c/*so c/*o /home/towski/gopath/pkg/linux_amd64/github.com/towski/grubby.a ruby
 
 gotool: main.go
 	go tool cgo main.go
