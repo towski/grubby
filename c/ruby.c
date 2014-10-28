@@ -11,6 +11,28 @@ typedef struct { long    mtype;
     char    mtext[MSGSZ];
 } message_buf; 
 
+
+extern VALUE rb_cEncoding;
+int rb_encdb_alias(const char *alias, const char *orig);
+
+/*
+ * Add alias to an existing encoding
+ *
+ * Encoding.add_alias('hebrew', 'Windows-1255') -> 'hebrew'
+ *
+ */
+VALUE rb_add_alias(VALUE self, VALUE alias,  VALUE orig) {
+    if (rb_encdb_alias(RSTRING_PTR(alias), RSTRING_PTR(orig)) == -1) {
+        return Qnil;
+    } else {
+        return alias;
+    }
+}
+
+void Init_enc_alias() {
+    rb_define_singleton_method(rb_cEncoding, "add_alias", rb_add_alias, 2);
+}
+
 static VALUE rb_cChannel;
 
 static VALUE rb_send(VALUE self, VALUE to_send){
@@ -95,6 +117,7 @@ int main(int argc, char** argv){
     rb_require("enc/utf_16le");
     rb_require("enc/utf_32be");
     rb_require("enc/utf_32le");
+    Init_enc_alias();
     VALUE encoding_class = rb_const_get(rb_cObject, rb_intern("Encoding"));
     rb_define_class_under(encoding_class, "UTF_7", rb_cObject);
     rb_define_class_under(encoding_class, "UTF_8", rb_cObject);
